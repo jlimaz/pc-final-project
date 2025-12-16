@@ -5,15 +5,10 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-# --- 1. SETUP & STYLING ---
 pio.templates.default = "plotly_dark"
-# We collect HTML strings of the figures here
 figures_html = {} 
 
 print("Loading and cleaning data...")
-
-# --- [YOUR DATA LOADING LOGIC REMAINS UNCHANGED] ---
-# (I am keeping your logic exactly as is to ensure it works)
 
 # A. Load S&P 500
 sp500 = pd.read_csv('SP500.csv')
@@ -76,7 +71,6 @@ df_clean = df.dropna().reset_index(drop=True)
 
 print("Data processing complete. Generating figures...")
 
-# --- 2. GENERATE FIGURES & CONVERT TO HTML ---
 # Helper function to convert fig to HTML div string (without full html structure)
 def fig_to_html(fig):
     return pio.to_html(fig, full_html=False, include_plotlyjs=False)
@@ -167,10 +161,8 @@ fig14.add_trace(go.Bar(x=corr_with_sp500.index, y=corr_with_sp500.values, marker
 fig14.update_layout(title="14. S&P 500 Proxy Analysis")
 figures_html['fig14'] = fig_to_html(fig14)
 
-# --- 3. CONSTRUCT THE FINAL HTML FILE ---
 print("Constructing HTML...")
 
-# CSS for a nice Dark Landing Page
 html_template = f"""
 <!DOCTYPE html>
 <html>
