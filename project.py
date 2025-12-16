@@ -8,9 +8,7 @@ from plotly.subplots import make_subplots
 pio.templates.default = "plotly_dark"
 figures_html = {} 
 
-print("Loading and cleaning data...")
-
-# A. Load S&P 500
+# load S&P 500
 sp500 = pd.read_csv('SP500.csv')
 sp500['SP500'] = pd.to_numeric(sp500['SP500'], errors='coerce')
 sp500.dropna(inplace=True)
@@ -24,7 +22,7 @@ sp500_annual = sp500.groupby('Year').agg(
 sp500_annual['SP500_Return'] = sp500_annual['Year_Close'].pct_change() * 100
 sp500_annual['SP500_Volatility'] = sp500_annual['Daily_Std'] * np.sqrt(252) * 100
 
-# B-E. Load Economic Data
+# load economic data
 gdp = pd.read_csv('GDP (1).csv')
 gdp['observation_date'] = pd.to_datetime(gdp['observation_date'])
 gdp['Year'] = gdp['observation_date'].dt.year
@@ -49,7 +47,7 @@ unemp['Year'] = unemp['observation_date'].dt.year
 unemp_annual = unemp.groupby('Year')['UNRATE'].mean().reset_index()
 unemp_annual = unemp_annual.rename(columns={'UNRATE': 'Unemployment_Rate'})
 
-# F. Stocks
+# f. stocks
 stocks = pd.read_csv('all_stocks_5yr.csv')
 stocks['date'] = pd.to_datetime(stocks['date'])
 stocks['Year'] = stocks['date'].dt.year
@@ -57,7 +55,6 @@ stock_annual = stocks.groupby(['Name', 'Year']).agg(
     Annual_Return=('close', lambda x: (x.iloc[-1] / x.iloc[0] - 1) * 100 if len(x) > 0 else np.nan)
 ).reset_index()
 
-# Merging
 df = sp500_annual.merge(gdp_annual, on='Year', how='inner')
 df = df.merge(cpi_annual, on='Year', how='inner')
 df = df.merge(fed_annual, on='Year', how='inner')
@@ -71,7 +68,7 @@ df_clean = df.dropna().reset_index(drop=True)
 
 print("Data processing complete. Generating figures...")
 
-# Helper function to convert fig to HTML div string (without full html structure)
+# function to convert fig to HTML div string
 def fig_to_html(fig):
     return pio.to_html(fig, full_html=False, include_plotlyjs=False)
 
@@ -88,7 +85,7 @@ figures_html['fig2'] = fig_to_html(fig2)
 fig3 = px.scatter(df_clean, x='Inflation', y='SP500_Return', trendline="ols", color="Fed_Funds_Rate", color_continuous_scale="Viridis", title="3. Inflation vs Returns")
 figures_html['fig3'] = fig_to_html(fig3)
 
-# Viz 4 (Animation Logic)
+# Viz 4
 sp500_monthly = sp500.set_index('observation_date').resample('M')['Daily_Return'].std().reset_index()
 sp500_monthly['Monthly_Volatility'] = sp500_monthly['Daily_Return'] * np.sqrt(252) * 100
 sp500_monthly['YearMonth'] = sp500_monthly['observation_date'].dt.to_period('M').astype(str)
@@ -96,15 +93,8 @@ unemp_monthly = unemp.copy()
 unemp_monthly['YearMonth'] = unemp_monthly['observation_date'].dt.to_period('M').astype(str)
 cpi_monthly = cpi.set_index('observation_date').resample('M').asfreq().interpolate(method='linear').reset_index()
 cpi_monthly['YearMonth'] = cpi_monthly['observation_date'].dt.to_period('M').astype(str)
-df_viz4 = sp500_monthly.merge(unemp_monthly[['YearMonth', 'UNRATE']], on='YearMonth', how='inner')
-df_viz4 = df_viz4.merge(cpi_monthly[['YearMonth', 'Inflation']], on='YearMonth', how='inner')
-df_viz4['Economy'] = 'US Economy'
-df_viz4 = df_viz4.sort_values('YearMonth')
-df_viz4['BubbleSize'] = df_viz4['UNRATE'] * 2
-fig4 = px.scatter(df_viz4, x='Inflation', y='Monthly_Volatility', animation_frame="YearMonth", animation_group="Economy", size="BubbleSize", color="UNRATE", hover_name="YearMonth", range_x=[df_viz4['Inflation'].min() - 0.5, df_viz4['Inflation'].max() + 0.5], range_y=[0, df_viz4['Monthly_Volatility'].max() * 1.2], color_continuous_scale="RdYlBu_r", title="4. [ANIMATED] Monthly Evolution")
-figures_html['fig4'] = fig_to_html(fig4)
 
-# Viz 5 - 14 (Processing the rest...)
+# Viz 5 - 14
 fig5 = px.box(df_clean, x='Rate_Category', y='SP500_Return', color='Rate_Category', points="all", title="5. High vs Low Interest Rates")
 figures_html['fig5'] = fig_to_html(fig5)
 
@@ -238,10 +228,6 @@ html_template = f"""
             <div class="card">{figures_html['fig3']}</div>
             <div class="card">{figures_html['fig6']}</div>
         </div>
-        
-        <div class="chart-full card">
-            {figures_html['fig4']}
-        </div>
 
         <div class="chart-row">
             <div class="card">{figures_html['fig5']}</div>
@@ -266,7 +252,6 @@ html_template = f"""
 </html>
 """
 
-# Write to file
 with open("dashboard.html", "w", encoding="utf-8") as f:
     f.write(html_template)
 
